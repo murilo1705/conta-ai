@@ -2,34 +2,44 @@
  * CONTA-AI — backend em Google Apps Script
  * Usa uma planilha Google Sheets como banco de dados.
  *
- * COMO INSTALAR (uma vez só):
- * 1. Crie uma planilha nova no Google Sheets (pode chamar de "Conta-AI - Dados").
- * 2. Menu Extensões > Apps Script.
- * 3. Apague o conteúdo de "Código.gs" e cole todo este arquivo no lugar.
- * 4. No topo do editor, escolha a função "configurarPlanilha" no seletor de funções
- *    e clique em Executar (ícone ▶). Autorize o acesso quando pedir.
- *    Isso cria a aba "Registros" com os cabeçalhos certos.
- * 5. Clique em Implantar > Nova implantação.
- *    - Tipo: "App da Web".
- *    - Executar como: "Eu" (sua conta).
- *    - Quem pode acessar: "Qualquer pessoa".
- * 6. Clique em Implantar, autorize de novo se pedir, e copie a URL do app da web
- *    (termina em /exec).
- * 7. Cole essa URL na constante DEFAULT_API_URL do arquivo index.html do Conta-AI.
+ * COMO INSTALAR / ATUALIZAR:
+ * 1. Na planilha, menu Extensões > Apps Script.
+ * 2. Apague o conteúdo de "Código.gs" e cole todo este arquivo no lugar.
+ * 3. Salve (Ctrl+S).
+ * 4. Escolha a função "configurarPlanilha" no seletor e clique em Executar.
+ *    Isso cria/atualiza os cabeçalhos da aba "Registros".
+ * 5. Implantar > Gerenciar implantações > ícone de lápis (editar) >
+ *    Versão: "Nova versão" > Implantar.
+ *    (A URL continua a mesma — não precisa mexer no app.)
  *
- * Sempre que você editar este código depois, gere uma NOVA implantação
- * (ou "Gerenciar implantações" > editar > Nova versão) para as mudanças valerem.
+ * IMPORTANTE: a gravação usa os nomes dos cabeçalhos, então a ordem
+ * das colunas pode mudar sem quebrar os registros antigos.
  */
 
 var SHEET_NAME = "Registros";
-var CABECALHOS = ["id", "timestamp", "tipo", "patrimonio", "patrimonio_modulo", "observacao", "responsavel", "lat", "lng", "precisao"];
+var CABECALHOS = [
+  "id",
+  "timestamp",
+  "tipo",
+  "patrimonio",
+  "patrimonio_modulo",
+  "patrimonio_ac",
+  "observacao",
+  "responsavel",
+  "lat",
+  "lng",
+  "precisao",
+  "ajuste_manual",
+  "endereco",
+  "link_maps"
+];
 
 function configurarPlanilha() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(SHEET_NAME);
-  if (!sheet) sheet = ss.insertSheet(SHEET_NAME);
+  var sheet = getSheet_();
   sheet.getRange(1, 1, 1, CABECALHOS.length).setValues([CABECALHOS]);
   sheet.setFrozenRows(1);
+  sheet.getRange(1, 1, 1, CABECALHOS.length).setFontWeight("bold");
+  SpreadsheetApp.getActiveSpreadsheet().toast("Cabeçalhos atualizados.", "Conta-AI", 5);
 }
 
 function getSheet_() {
@@ -44,23 +54,47 @@ function getSheet_() {
 }
 
 function saida_(obj) {
-  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+  return ContentService.createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * Busca o endereço aproximado a partir das coordenadas.
+ * Se falhar (sem internet no servidor, limite de uso, área sem
+ * mapeamento), devolve string vazia — nunca quebra o registro.
+ */
+function enderecoDe_(lat, lng) {
+  try {
+    var url = "https://nominatim.openstreetmap.org/reverse"
+      + "?format=json&zoom=18&addressdetails=1&accept-language=pt-BR"
+      + "&lat=" + encodeURIComponent(lat)
+      + "&lon=" + encodeURIComponent(lng);
+    var resp = UrlFetchApp.fetch(url, {
+      muteHttpExceptions: true,
+      headers: { "User-Agent": "Conta-AI (inventario de campo)" }
+    });
+    if (resp.getResponseCode() !== 200) return "";
+    var j = JSON.parse(resp.getContentText());
+    return j && j.display_name ? j.display_name : "";
+  } catch (e) {
+    return "";
+  }
 }
 
 function doGet(e) {
   try {
     var sheet = getSheet_();
-    var range = sheet.getDataRange();
-    var values = range.getValues();
+    var values = sheet.getDataRange().getValues();
     if (values.length < 2) return saida_({ ok: true, registros: [] });
 
     var headers = values[0];
     var registros = [];
     for (var i = 1; i < values.length; i++) {
       var row = values[i];
-      if (!row[0]) continue; // pula linhas vazias
+      if (!row[0]) continue;
       var obj = {};
       for (var c = 0; c < headers.length; c++) {
+        if (!headers[c]) continue;
         var val = row[c];
         if (val instanceof Date) val = val.toISOString();
         obj[headers[c]] = val;
@@ -81,21 +115,44 @@ function doPost(e) {
     }
 
     var sheet = getSheet_();
+    var headers = sheet.getRange(1, 1, 1, Math.max(sheet.getLastColumn(), 1)).getValues()[0];
+
+    // Se a planilha ainda não tem cabeçalhos, cria agora.
+    if (!headers[0]) {
+      sheet.getRange(1, 1, 1, CABECALHOS.length).setValues([CABECALHOS]);
+      sheet.setFrozenRows(1);
+      headers = CABECALHOS.slice();
+    }
+
     var id = Utilities.getUuid();
     var timestamp = new Date();
+    var lat = body.lat;
+    var lng = body.lng;
 
-    sheet.appendRow([
-      id,
-      timestamp,
-      body.tipo || "",
-      body.patrimonio || "",
-      body.patrimonioModulo || "",
-      body.observacao || "",
-      body.responsavel || "",
-      body.lat,
-      body.lng,
-      body.precisao || ""
-    ]);
+    var dados = {
+      id: id,
+      timestamp: timestamp,
+      tipo: body.tipo || "",
+      patrimonio: body.patrimonio || "",
+      patrimonio_modulo: body.patrimonioModulo || "",
+      patrimonio_ac: body.patrimonioAC || "",
+      observacao: body.observacao || "",
+      responsavel: body.responsavel || "",
+      lat: lat,
+      lng: lng,
+      precisao: body.precisao || "",
+      ajuste_manual: body.ajusteManual ? "sim" : "nao",
+      endereco: enderecoDe_(lat, lng),
+      link_maps: "https://www.google.com/maps?q=" + lat + "," + lng
+    };
+
+    // Monta a linha na ordem dos cabeçalhos que a planilha realmente tem.
+    var linha = [];
+    for (var c = 0; c < headers.length; c++) {
+      var nome = headers[c];
+      linha.push(Object.prototype.hasOwnProperty.call(dados, nome) ? dados[nome] : "");
+    }
+    sheet.appendRow(linha);
 
     return saida_({ ok: true, id: id, timestamp: timestamp.toISOString() });
   } catch (err) {

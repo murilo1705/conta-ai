@@ -62,6 +62,7 @@
   }
 
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
   html, body { height: 100%; }
   body {
     margin: 0;
@@ -72,7 +73,7 @@
     display: flex;
     flex-direction: column;
   }
-  h1, h2, h3, .display {
+  h1, h2, h3 {
     font-family: "Barlow Condensed", "Barlow", sans-serif;
     font-weight: 700;
     letter-spacing: 0.01em;
@@ -83,9 +84,7 @@
     font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace;
     font-variant-numeric: tabular-nums;
   }
-  a { color: var(--accent-2); }
 
-  /* ---------- App shell ---------- */
   #app { display: flex; flex-direction: column; height: 100%; }
 
   header.topbar {
@@ -100,7 +99,7 @@
     justify-content: space-between;
     gap: 10px;
   }
-  .brand { display: flex; align-items: baseline; gap: 8px; }
+  .brand { display: flex; align-items: center; gap: 9px; }
   .brand .mark {
     display: inline-flex;
     align-items: center;
@@ -132,7 +131,14 @@
   .status-pill.pending { color: var(--accent-ink); background: color-mix(in srgb, var(--accent) 20%, transparent); border-color: transparent; }
   .status-pill.pending .dot { background: var(--accent); }
 
-  main { flex: 1; overflow-y: auto; padding: 16px 16px calc(96px + env(safe-area-inset-bottom, 0px)); max-width: 640px; width: 100%; margin: 0 auto; }
+  main {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 16px calc(96px + env(safe-area-inset-bottom, 0px));
+    max-width: 640px;
+    width: 100%;
+    margin: 0 auto;
+  }
 
   nav.tabbar {
     position: fixed;
@@ -157,13 +163,15 @@
     font-size: 11px;
     font-weight: 600;
     cursor: pointer;
+    position: relative;
   }
   nav.tabbar button svg { width: 22px; height: 22px; }
   nav.tabbar button.active { color: var(--accent-ink); }
   nav.tabbar button.active svg { color: var(--accent); }
-  nav.tabbar button .badge {
+  nav.tabbar .badge {
     position: absolute;
-    transform: translate(11px, -9px);
+    top: 6px; left: 50%;
+    transform: translateX(6px);
     background: var(--accent-2);
     color: #fff;
     font-size: 10px;
@@ -178,8 +186,8 @@
   section.tab { display: none; }
   section.tab.active { display: block; animation: fade .18s ease; }
   @keyframes fade { from { opacity: 0; transform: translateY(4px);} to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { section.tab.active { animation: none; } }
 
-  /* ---------- Cards / forms ---------- */
   .card {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -188,7 +196,7 @@
     padding: 16px;
   }
   .stack { display: flex; flex-direction: column; gap: 14px; }
-  .field label {
+  .field .lbl {
     display: block;
     font-size: 12px;
     font-weight: 600;
@@ -198,23 +206,22 @@
     margin-bottom: 6px;
   }
   .field input[type="text"],
-  .field textarea,
-  .field select {
+  .field textarea {
     width: 100%;
     font: inherit;
     font-size: 16px;
-    padding: 12px 12px;
+    padding: 12px;
     border-radius: 10px;
     border: 1.5px solid var(--border);
     background: var(--bg);
     color: var(--text);
   }
-  .field textarea { resize: vertical; min-height: 64px; }
-  .field input:focus, .field textarea:focus, .field select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .field textarea { resize: vertical; min-height: 60px; }
+  .field input:focus, .field textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 
   .type-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
     gap: 8px;
   }
   .type-btn {
@@ -235,14 +242,20 @@
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     font-size: 16px;
-    color: #fff;
   }
-  .type-btn span.label { font-size: 12px; font-weight: 600; text-align: center; line-height: 1.15; }
+  .type-btn .label { font-size: 12px; font-weight: 600; text-align: center; line-height: 1.15; }
   .type-btn.selected { border-color: var(--tcolor); background: color-mix(in srgb, var(--tcolor) 12%, var(--surface)); }
+  .type-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
+  .vinculo-box {
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+    background: var(--bg);
+  }
   .checkline { display: flex; align-items: flex-start; gap: 10px; }
-  .checkline input { margin-top: 3px; width: 18px; height: 18px; flex: none; }
-  .checkline label { font-size: 14px; color: var(--text); }
+  .checkline input { margin-top: 2px; width: 19px; height: 19px; flex: none; accent-color: var(--accent); }
+  .checkline label { font-size: 14.5px; font-weight: 600; color: var(--text); line-height: 1.35; }
 
   .gps-box {
     border: 1.5px dashed var(--border);
@@ -252,6 +265,8 @@
     flex-direction: column;
     gap: 10px;
   }
+  .gps-box.ok { border-style: solid; border-color: color-mix(in srgb, var(--ok) 50%, var(--border)); }
+  .gps-box.err { border-color: color-mix(in srgb, var(--danger) 50%, var(--border)); }
   .gps-status { display: flex; align-items: center; gap: 10px; font-size: 14px; }
   .gps-status .crosshair {
     width: 34px; height: 34px; flex: none;
@@ -259,12 +274,39 @@
     border: 2px solid var(--border);
     display: flex; align-items: center; justify-content: center;
     color: var(--text-muted);
-    position: relative;
+    font-size: 16px;
   }
   .gps-box.ok .crosshair { border-color: var(--ok); color: var(--ok); }
   .gps-box.err .crosshair { border-color: var(--danger); color: var(--danger); }
-  .gps-coords { font-size: 13px; color: var(--text-muted); }
+  .gps-coords { font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
   .gps-coords b { color: var(--text); }
+  .gps-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--accent) 22%, var(--surface));
+    color: var(--accent-ink);
+    margin-top: 5px;
+  }
+
+  #mapAjusteWrap { display: none; flex-direction: column; gap: 8px; }
+  #mapAjusteWrap.show { display: flex; }
+  #mapAjuste {
+    width: 100%;
+    height: 280px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+  }
+  .ajuste-dica {
+    font-size: 12.5px;
+    color: var(--text-muted);
+    line-height: 1.45;
+  }
 
   button.btn {
     font: inherit;
@@ -279,11 +321,14 @@
     justify-content: center;
     gap: 8px;
   }
+  button.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .btn-accent { background: var(--accent); color: var(--accent-ink); width: 100%; }
   .btn-accent:disabled { opacity: 0.45; cursor: not-allowed; }
   .btn-outline { background: transparent; border: 1.5px solid var(--border); color: var(--text); width: 100%; }
   .btn-ghost { background: var(--surface-2); color: var(--text); }
-  .btn-sm { padding: 8px 12px; font-size: 13px; border-radius: 9px; }
+  .btn-sm { padding: 9px 13px; font-size: 13px; border-radius: 9px; width: auto; }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn-row .btn { flex: 1 1 auto; min-width: 140px; }
 
   .toast {
     border-radius: 10px;
@@ -299,12 +344,10 @@
   .toast.err { background: color-mix(in srgb, var(--danger) 16%, var(--surface)); color: var(--danger); }
   .toast.info { background: color-mix(in srgb, var(--accent) 18%, var(--surface)); color: var(--accent-ink); }
 
-  .section-title { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; }
+  .section-title { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; gap: 10px; }
   .section-title h2 { font-size: 19px; }
-  .section-title .count { font-size: 12px; color: var(--text-muted); }
+  .section-title .count { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
 
-  /* ---------- Mapa ---------- */
-  #mapa-wrap { display: flex; flex-direction: column; gap: 10px; }
   .chips { display: flex; gap: 6px; flex-wrap: wrap; }
   .chip {
     border: 1.5px solid var(--chipcolor, var(--border));
@@ -316,28 +359,51 @@
     font-weight: 600;
     cursor: pointer;
     display: flex; align-items: center; gap: 6px;
+    font-family: inherit;
   }
   .chip .sw { width: 9px; height: 9px; border-radius: 50%; background: var(--chipcolor); flex: none; }
   .chip.off { opacity: 0.4; }
+
+  #mapa-wrap { display: flex; flex-direction: column; gap: 10px; }
   #map {
     width: 100%;
-    height: min(58vh, 480px);
+    height: min(56vh, 460px);
     border-radius: var(--radius);
     border: 1px solid var(--border);
     background: var(--surface-2);
   }
+  .seg {
+    display: inline-flex;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--surface);
+  }
+  .seg button {
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 14px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+  }
+  .seg button.active { background: var(--accent); color: var(--accent-ink); }
+
   .leaflet-popup-content-wrapper { background: var(--surface); color: var(--text); border-radius: 10px; }
   .leaflet-popup-tip { background: var(--surface); }
-  .popup-card { font-family: "Barlow", sans-serif; min-width: 190px; }
+  .leaflet-container { font-family: "Barlow", sans-serif; }
+  .popup-card { min-width: 190px; }
   .popup-card .tipo { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
   .popup-card .patr { font-family: "IBM Plex Mono", monospace; font-size: 15px; font-weight: 600; margin: 3px 0 6px; }
-  .popup-card .meta { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+  .popup-card .meta { font-size: 12px; color: var(--text-muted); line-height: 1.55; }
+  .popup-card a { color: var(--accent-2); }
 
-  /* ---------- Lista ---------- */
   .search-row { display: flex; gap: 8px; }
   .search-row input {
     flex: 1;
-    font: inherit; font-size: 15px;
+    font: inherit; font-size: 16px;
     padding: 11px 12px;
     border-radius: 10px;
     border: 1.5px solid var(--border);
@@ -357,18 +423,13 @@
   .item-card .dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 5px; flex: none; background: var(--icolor); }
   .item-card .body { flex: 1; min-width: 0; }
   .item-card .row1 { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
-  .item-card .patr { font-family: "IBM Plex Mono", monospace; font-weight: 600; font-size: 15px; }
-  .item-card .tipo { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--icolor); }
+  .item-card .patr { font-family: "IBM Plex Mono", monospace; font-weight: 600; font-size: 15px; word-break: break-all; }
+  .item-card .tipo { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--icolor); white-space: nowrap; }
   .item-card .meta { font-size: 12.5px; color: var(--text-muted); margin-top: 3px; line-height: 1.5; }
+  .item-card .vinc { font-size: 12.5px; margin-top: 3px; }
   .item-card .obs { font-size: 12.5px; color: var(--text); margin-top: 4px; }
-  .item-card button.btn-sm { flex: none; }
 
-  .empty {
-    text-align: center;
-    padding: 40px 16px;
-    color: var(--text-muted);
-    font-size: 14px;
-  }
+  .empty { text-align: center; padding: 40px 16px; color: var(--text-muted); font-size: 14px; }
   .empty .big { font-size: 34px; display: block; margin-bottom: 8px; }
 
   .fila-banner {
@@ -381,13 +442,19 @@
     padding: 9px 12px;
     font-size: 12.5px;
     margin-bottom: 12px;
+    line-height: 1.4;
   }
   .fila-banner.show { display: flex; }
 
-  .cfg-row { display: flex; gap: 8px; align-items: center; margin-top: 14px; }
-  .cfg-row summary { font-size: 12px; color: var(--text-muted); cursor: pointer; }
+  details.cfg { margin-top: 14px; }
+  details.cfg summary { font-size: 12px; color: var(--text-muted); cursor: pointer; }
   .cfg-box { margin-top: 8px; display: flex; flex-direction: column; gap: 8px; }
-  .cfg-box input { font-family: "IBM Plex Mono", monospace; font-size: 12px; padding: 9px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
+  .cfg-box input {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px; padding: 9px;
+    border-radius: 8px; border: 1px solid var(--border);
+    background: var(--bg); color: var(--text);
+  }
 </style>
 </head>
 <body>
@@ -406,58 +473,73 @@
 
   <main>
 
-    <!-- ===================== TAB: REGISTRAR ===================== -->
+    <!-- ===================== REGISTRAR ===================== -->
     <section id="tab-registrar" class="tab active">
       <div class="fila-banner" id="filaBanner">
-        <span>⏳</span>
-        <span id="filaBannerTxt"></span>
+        <span>⏳</span><span id="filaBannerTxt"></span>
       </div>
 
       <form id="form" class="card stack" autocomplete="off">
 
         <div class="field">
-          <label for="responsavel">Quem está registrando</label>
-          <input type="text" id="responsavel" name="responsavel" placeholder="Seu nome" required>
+          <label class="lbl" for="responsavel">Quem está registrando</label>
+          <input type="text" id="responsavel" placeholder="Seu nome" required>
         </div>
 
         <div class="field">
-          <label>Tipo de item</label>
+          <span class="lbl">Tipo de item</span>
           <div class="type-grid" id="tipoGrid"></div>
         </div>
 
         <div class="field">
-          <label for="patrimonio">Patrimônio do item</label>
-          <input type="text" id="patrimonio" name="patrimonio" placeholder="Ex: 0123456" required>
+          <label class="lbl" for="patrimonio">Patrimônio do item</label>
+          <input type="text" id="patrimonio" placeholder="Ex: 0123456" required>
         </div>
 
         <div class="field" id="campoVinculo" hidden>
-          <div class="checkline">
-            <input type="checkbox" id="vinculado">
-            <label for="vinculado">Este ar-condicionado veio junto com o módulo (mesma nota fiscal)</label>
-          </div>
-          <div id="patrModuloWrap" hidden style="margin-top:10px;">
-            <label for="patrimonioModulo">Patrimônio do módulo vinculado</label>
-            <input type="text" id="patrimonioModulo" placeholder="Patrimônio do módulo">
+          <div class="vinculo-box">
+            <div class="checkline">
+              <input type="checkbox" id="temVinculo">
+              <label for="temVinculo" id="vinculoPergunta">—</label>
+            </div>
+            <div id="vinculoCampoWrap" hidden style="margin-top:11px;">
+              <label class="lbl" for="vinculoPatrimonio" id="vinculoCampoLabel">—</label>
+              <input type="text" id="vinculoPatrimonio" placeholder="Patrimônio">
+            </div>
           </div>
         </div>
 
         <div class="field">
-          <label for="observacao">Observação (opcional)</label>
+          <label class="lbl" for="observacao">Observação (opcional)</label>
           <textarea id="observacao" placeholder="Ex: bloco B, próximo ao refeitório"></textarea>
         </div>
 
         <div class="field">
-          <label>Localização</label>
+          <span class="lbl">Localização</span>
           <div class="gps-box" id="gpsBox">
             <div class="gps-status">
               <div class="crosshair" id="gpsCrosshair">＋</div>
               <div>
                 <div id="gpsMsg">Ainda não capturada</div>
                 <div class="gps-coords mono" id="gpsCoords"></div>
+                <span class="gps-badge" id="gpsAjustadoBadge" hidden>Pino ajustado à mão</span>
               </div>
             </div>
-            <button type="button" class="btn btn-outline" id="btnGps">📍 Capturar localização atual</button>
-            <a id="gpsMapsLink" href="#" target="_blank" rel="noopener" hidden style="font-size:13px;">Ver no Google Maps ↗</a>
+            <div class="btn-row">
+              <button type="button" class="btn btn-outline" id="btnGps">📍 Usar minha localização</button>
+              <button type="button" class="btn btn-outline" id="btnAjustar">🗺️ Ajustar no mapa</button>
+            </div>
+            <div id="mapAjusteWrap">
+              <div id="mapAjuste"></div>
+              <p class="ajuste-dica">Arraste o alfinete ou toque no mapa para colocá-lo no ponto exato. Use o botão de satélite para enxergar o pátio.</p>
+              <div class="btn-row">
+                <div class="seg" role="group" aria-label="Tipo de mapa">
+                  <button type="button" id="ajusteRuas" class="active">Mapa</button>
+                  <button type="button" id="ajusteSat">Satélite</button>
+                </div>
+                <button type="button" class="btn btn-ghost btn-sm" id="btnCentralizar">Voltar à minha posição</button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -466,30 +548,34 @@
         <button type="submit" class="btn btn-accent" id="btnSalvar" disabled>Salvar registro</button>
       </form>
 
-      <details class="cfg-row">
+      <details class="cfg">
         <summary>Configuração avançada</summary>
         <div class="cfg-box">
-          <label style="font-size:11px;color:var(--text-muted);">URL do backend (Apps Script)</label>
+          <label class="lbl" for="apiUrlInput">URL do backend (Apps Script)</label>
           <input type="text" id="apiUrlInput" placeholder="https://script.google.com/macros/s/.../exec">
           <button type="button" class="btn btn-ghost btn-sm" id="btnSalvarApi">Salvar URL neste aparelho</button>
         </div>
       </details>
     </section>
 
-    <!-- ===================== TAB: MAPA ===================== -->
+    <!-- ===================== MAPA ===================== -->
     <section id="tab-mapa" class="tab">
       <div class="section-title">
         <h2>Mapa coletivo</h2>
         <span class="count" id="mapaCount"></span>
       </div>
       <div id="mapa-wrap">
+        <div class="seg" role="group" aria-label="Tipo de mapa">
+          <button type="button" id="mapaRuas" class="active">Mapa</button>
+          <button type="button" id="mapaSat">Satélite</button>
+        </div>
         <div class="chips" id="chipsMapa"></div>
         <div id="map"></div>
         <button type="button" class="btn btn-outline" id="btnRecarregarMapa">↻ Recarregar dados</button>
       </div>
     </section>
 
-    <!-- ===================== TAB: LISTA ===================== -->
+    <!-- ===================== LISTA ===================== -->
     <section id="tab-lista" class="tab">
       <div class="section-title">
         <h2>Todos os registros</h2>
@@ -497,9 +583,12 @@
       </div>
       <div class="search-row">
         <input type="text" id="busca" placeholder="Buscar por patrimônio...">
-        <button type="button" class="btn btn-outline btn-sm" id="btnRecarregarLista">↻</button>
+        <button type="button" class="btn btn-outline btn-sm" id="btnRecarregarLista" aria-label="Recarregar">↻</button>
       </div>
       <div class="chips" id="chipsLista" style="margin-top:8px;"></div>
+      <div class="btn-row" style="margin-top:10px;">
+        <button type="button" class="btn btn-ghost btn-sm" id="btnExportar">⬇️ Baixar planilha (CSV)</button>
+      </div>
       <div class="list-items" id="listaItems"></div>
     </section>
 
@@ -510,7 +599,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
       Registrar
     </button>
-    <button class="tab-btn" data-tab="mapa" style="position:relative;">
+    <button class="tab-btn" data-tab="mapa">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 20l-6-3V4l6 3 6-3 6 3v13l-6-3-6 3z"/><path d="M9 4v13M15 7v13"/></svg>
       Mapa
       <span class="badge" id="badgePendentes" hidden></span>
@@ -527,12 +616,6 @@
 (function(){
   "use strict";
 
-  /* =========================================================
-     CONFIGURAÇÃO
-     Depois de publicar o backend (Google Apps Script), cole a
-     URL do Web App aqui. Assim todo mundo que abrir o link já
-     funciona, sem precisar configurar nada em cada aparelho.
-  ========================================================= */
   var DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbw5rexoXRCbfXL0JdT0ELbfHE4K_FhB9xVCTG2aKw5Iwx0hu7GWTQ5blKHEpgs19gvO/exec";
 
   var STORAGE = {
@@ -542,40 +625,91 @@
     cache: "contaai_cache"
   };
 
-  var TIPOS = {
-    modulo:          { label: "Módulo",           color: "var(--modulo)",   emoji: "📦" },
-    ar_condicionado: { label: "Ar-condicionado",  color: "var(--ar)",       emoji: "❄️" },
-    banheiro:        { label: "Banheiro",         color: "var(--banheiro)", emoji: "🚻" },
-    sobreteto:       { label: "Sobreteto",        color: "var(--sobreteto)",emoji: "⛱️" },
-    caixa_dejetos:   { label: "Caixa de dejetos", color: "var(--caixa)",    emoji: "🗑️" }
-  };
-  var TIPO_HEX = { modulo:"#2f6690", ar_condicionado:"#1f9e8a", banheiro:"#6b5b95", sobreteto:"#d97706", caixa_dejetos:"#7a5230" };
+  var CENTRO_PADRAO = [-6.05, -50.15]; // região de Carajás / S11D
 
-  function lsGet(k, fallback){ try { var v = localStorage.getItem(k); return v === null ? fallback : v; } catch(e){ return fallback; } }
+  var TIPOS = {
+    modulo: {
+      label: "Módulo", hex: "#2f6690", emoji: "📦",
+      vinculo: {
+        pergunta: "Este módulo tem ar-condicionado?",
+        campoLabel: "Patrimônio do ar-condicionado",
+        campo: "patrimonioAC"
+      }
+    },
+    ar_condicionado: {
+      label: "Ar-condicionado", hex: "#1f9e8a", emoji: "❄️",
+      vinculo: {
+        pergunta: "Está instalado em um módulo ou banheiro?",
+        campoLabel: "Patrimônio do módulo / banheiro",
+        campo: "patrimonioModulo"
+      }
+    },
+    banheiro: {
+      label: "Banheiro", hex: "#6b5b95", emoji: "🚻",
+      vinculo: {
+        pergunta: "Este banheiro tem ar-condicionado?",
+        campoLabel: "Patrimônio do ar-condicionado",
+        campo: "patrimonioAC"
+      }
+    },
+    sobreteto: {
+      label: "Sobreteto", hex: "#d97706", emoji: "⛱️",
+      vinculo: {
+        pergunta: "Está acoplado em algum módulo?",
+        campoLabel: "Patrimônio do módulo",
+        campo: "patrimonioModulo"
+      }
+    },
+    caixa_dejetos: {
+      label: "Caixa de dejetos", hex: "#7a5230", emoji: "🗑️",
+      vinculo: {
+        pergunta: "Está acoplada em algum módulo?",
+        campoLabel: "Patrimônio do módulo",
+        campo: "patrimonioModulo"
+      }
+    }
+  };
+
+  /* ---------------- armazenamento local ---------------- */
+  function lsGet(k, fb){ try { var v = localStorage.getItem(k); return v === null ? fb : v; } catch(e){ return fb; } }
   function lsSet(k, v){ try { localStorage.setItem(k, v); } catch(e){} }
-  function lsGetJSON(k, fallback){ try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : fallback; } catch(e){ return fallback; } }
+  function lsGetJSON(k, fb){ try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : fb; } catch(e){ return fb; } }
   function lsSetJSON(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
 
   function getApiUrl(){
     var custom = lsGet(STORAGE.apiUrl, "");
-    if (custom) return custom;
-    return DEFAULT_API_URL;
+    return custom || DEFAULT_API_URL;
   }
+  function apiOk(){ var u = getApiUrl(); return !!u && u.indexOf("http") === 0; }
 
   var state = {
-    tab: "registrar",
     tipoSelecionado: null,
-    gps: null, // {lat, lng, acc}
+    gps: null,            // {lat, lng, acc, ajustado}
+    gpsOriginal: null,    // posição vinda do aparelho, para o botão "voltar"
     filtrosMapa: {},
     filtrosLista: {},
     registros: lsGetJSON(STORAGE.cache, []),
-    map: null,
-    markers: {},
-    mapLoaded: false
+    map: null, markers: {}, mapLoaded: false, camadasMapa: null,
+    mapAjuste: null, marcadorAjuste: null, camadasAjuste: null
   };
   Object.keys(TIPOS).forEach(function(t){ state.filtrosMapa[t] = true; state.filtrosLista[t] = true; });
 
-  /* ---------------- Status online/offline + fila ---------------- */
+  function escapeHtml(s){
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+
+  function formatarData(iso){
+    if (!iso) return "—";
+    try {
+      var d = new Date(iso);
+      if (isNaN(d.getTime())) return String(iso);
+      return d.toLocaleString("pt-BR", { timeZone:"America/Sao_Paulo", day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit" });
+    } catch(e){ return String(iso); }
+  }
+
+  /* ---------------- status / fila offline ---------------- */
   var statusPill = document.getElementById("statusPill");
   var statusTxt = document.getElementById("statusTxt");
   var filaBanner = document.getElementById("filaBanner");
@@ -594,7 +728,7 @@
       : (online ? "online" : "sem conexão");
     if (fila.length){
       filaBanner.classList.add("show");
-      filaBannerTxt.textContent = fila.length + " registro" + (fila.length>1?"s":"") + " salvo" + (fila.length>1?"s":"") + " neste aparelho, aguardando conexão para enviar.";
+      filaBannerTxt.textContent = fila.length + " registro" + (fila.length>1?"s":"") + " guardado" + (fila.length>1?"s":"") + " neste aparelho, aguardando conexão para enviar.";
       badgePendentes.hidden = false;
       badgePendentes.textContent = fila.length;
     } else {
@@ -608,9 +742,8 @@
   setInterval(function(){ if (navigator.onLine) sincronizarFila(); }, 30000);
 
   function postRegistro(payload){
-    var url = getApiUrl();
-    if (!url || url.indexOf("http") !== 0) return Promise.reject(new Error("sem_url"));
-    return fetch(url, {
+    if (!apiOk()) return Promise.reject(new Error("sem_url"));
+    return fetch(getApiUrl(), {
       method: "POST",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify(payload)
@@ -626,64 +759,111 @@
   function sincronizarFila(){
     var fila = getFila();
     if (!fila.length) return;
-    var item = fila[0];
-    postRegistro(item).then(function(){
+    postRegistro(fila[0]).then(function(){
       var atual = getFila();
       atual.shift();
       setFila(atual);
       if (atual.length) sincronizarFila();
-    }).catch(function(){ /* tenta de novo depois */ });
+    }).catch(function(){});
   }
 
-  /* ---------------- Toast ---------------- */
+  /* ---------------- toast ---------------- */
   var toastEl = document.getElementById("toast");
   var toastTimer = null;
   function toast(msg, tipo){
     toastEl.textContent = msg;
     toastEl.className = "toast show " + (tipo || "info");
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(function(){ toastEl.className = "toast"; }, 5000);
+    toastTimer = setTimeout(function(){ toastEl.className = "toast"; }, 6000);
   }
 
-  /* ---------------- Abas ---------------- */
-  var tabBtns = document.querySelectorAll(".tab-btn");
+  /* ---------------- camadas de mapa ---------------- */
+  // Em área com sinal fraco a biblioteca do mapa pode não carregar.
+  // Nesse caso o resto do app continua funcionando normalmente.
+  function leafletOk(){ return typeof window.L !== "undefined"; }
+
+  function criarCamadas(){
+    return {
+      ruas: L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19, attribution: "© OpenStreetMap"
+      }),
+      satelite: L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+        maxZoom: 19, attribution: "Imagens © Esri"
+      })
+    };
+  }
+
+  function ligarSeletorCamada(mapa, camadas, btnRuas, btnSat){
+    function trocar(qual){
+      var ativa = qual === "sat" ? camadas.satelite : camadas.ruas;
+      var outra = qual === "sat" ? camadas.ruas : camadas.satelite;
+      if (mapa.hasLayer(outra)) mapa.removeLayer(outra);
+      if (!mapa.hasLayer(ativa)) ativa.addTo(mapa);
+      btnRuas.classList.toggle("active", qual !== "sat");
+      btnSat.classList.toggle("active", qual === "sat");
+    }
+    btnRuas.addEventListener("click", function(){ trocar("ruas"); });
+    btnSat.addEventListener("click", function(){ trocar("sat"); });
+  }
+
+  /* ---------------- abas ---------------- */
+  var tabBtns = Array.prototype.slice.call(document.querySelectorAll(".tab-btn"));
   tabBtns.forEach(function(btn){
-    btn.addEventListener("click", function(){ irParaAba(btn.dataset.tab); });
+    btn.addEventListener("click", function(){ irParaAba(btn.getAttribute("data-tab")); });
   });
   function irParaAba(tab){
-    state.tab = tab;
-    document.querySelectorAll(".tab").forEach(function(s){ s.classList.remove("active"); });
+    Array.prototype.forEach.call(document.querySelectorAll(".tab"), function(s){ s.classList.remove("active"); });
     document.getElementById("tab-" + tab).classList.add("active");
-    tabBtns.forEach(function(b){ b.classList.toggle("active", b.dataset.tab === tab); });
-    if (tab === "mapa"){ initMapaSeNecessario(); carregarRegistros(); }
+    tabBtns.forEach(function(b){ b.classList.toggle("active", b.getAttribute("data-tab") === tab); });
+    if (tab === "mapa"){ initMapa(); carregarRegistros(); }
     if (tab === "lista"){ carregarRegistros(); }
   }
 
-  /* ---------------- Formulário: tipo ---------------- */
+  /* ---------------- tipo de item + vínculo ---------------- */
   var tipoGrid = document.getElementById("tipoGrid");
+  var campoVinculo = document.getElementById("campoVinculo");
+  var temVinculo = document.getElementById("temVinculo");
+  var vinculoPergunta = document.getElementById("vinculoPergunta");
+  var vinculoCampoWrap = document.getElementById("vinculoCampoWrap");
+  var vinculoCampoLabel = document.getElementById("vinculoCampoLabel");
+  var vinculoPatrimonio = document.getElementById("vinculoPatrimonio");
+
   Object.keys(TIPOS).forEach(function(key){
     var t = TIPOS[key];
     var btn = document.createElement("button");
     btn.type = "button";
     btn.className = "type-btn";
-    btn.style.setProperty("--tcolor", t.color);
-    btn.dataset.tipo = key;
-    btn.innerHTML = '<span class="ico" style="background:' + t.color + '">' + t.emoji + '</span><span class="label">' + t.label + '</span>';
+    btn.style.setProperty("--tcolor", t.hex);
+    btn.innerHTML = '<span class="ico" style="background:' + t.hex + '">' + t.emoji + '</span>' +
+                    '<span class="label">' + t.label + '</span>';
     btn.addEventListener("click", function(){
       state.tipoSelecionado = key;
-      tipoGrid.querySelectorAll(".type-btn").forEach(function(b){ b.classList.remove("selected"); });
+      Array.prototype.forEach.call(tipoGrid.querySelectorAll(".type-btn"), function(b){ b.classList.remove("selected"); });
       btn.classList.add("selected");
-      document.getElementById("campoVinculo").hidden = (key !== "ar_condicionado");
+      aplicarVinculo(key);
       validarForm();
     });
     tipoGrid.appendChild(btn);
   });
 
-  document.getElementById("vinculado").addEventListener("change", function(e){
-    document.getElementById("patrModuloWrap").hidden = !e.target.checked;
+  function aplicarVinculo(tipoKey){
+    var v = TIPOS[tipoKey] && TIPOS[tipoKey].vinculo;
+    if (!v){ campoVinculo.hidden = true; return; }
+    campoVinculo.hidden = false;
+    vinculoPergunta.textContent = v.pergunta;
+    vinculoCampoLabel.textContent = v.campoLabel;
+    vinculoPatrimonio.placeholder = v.campoLabel;
+    temVinculo.checked = false;
+    vinculoPatrimonio.value = "";
+    vinculoCampoWrap.hidden = true;
+  }
+
+  temVinculo.addEventListener("change", function(){
+    vinculoCampoWrap.hidden = !temVinculo.checked;
+    if (temVinculo.checked) vinculoPatrimonio.focus();
   });
 
-  /* ---------------- Formulário: responsável (lembrar) ---------------- */
+  /* ---------------- responsável ---------------- */
   var inputResponsavel = document.getElementById("responsavel");
   inputResponsavel.value = lsGet(STORAGE.responsavel, "");
   inputResponsavel.addEventListener("input", function(){
@@ -694,17 +874,38 @@
   var inputPatrimonio = document.getElementById("patrimonio");
   inputPatrimonio.addEventListener("input", validarForm);
 
-  /* ---------------- Formulário: GPS ---------------- */
+  /* ---------------- GPS + ajuste no mapa ---------------- */
   var gpsBox = document.getElementById("gpsBox");
   var gpsMsg = document.getElementById("gpsMsg");
   var gpsCoords = document.getElementById("gpsCoords");
-  var gpsMapsLink = document.getElementById("gpsMapsLink");
+  var gpsAjustadoBadge = document.getElementById("gpsAjustadoBadge");
   var btnGps = document.getElementById("btnGps");
+  var btnAjustar = document.getElementById("btnAjustar");
+  var mapAjusteWrap = document.getElementById("mapAjusteWrap");
+
+  function mostrarGps(){
+    if (!state.gps){
+      gpsBox.className = "gps-box";
+      gpsMsg.textContent = "Ainda não capturada";
+      gpsCoords.innerHTML = "";
+      gpsAjustadoBadge.hidden = true;
+      return;
+    }
+    gpsBox.className = "gps-box ok";
+    gpsMsg.textContent = state.gps.ajustado ? "Localização definida no mapa" : "Localização capturada";
+    var precisao = state.gps.ajustado
+      ? "posição escolhida manualmente"
+      : (state.gps.acc ? "precisão ±" + state.gps.acc + " m" : "");
+    gpsCoords.innerHTML = "<b>" + state.gps.lat.toFixed(6) + ", " + state.gps.lng.toFixed(6) + "</b>" +
+                          (precisao ? " · " + precisao : "");
+    gpsAjustadoBadge.hidden = !state.gps.ajustado;
+    validarForm();
+  }
 
   btnGps.addEventListener("click", function(){
     if (!("geolocation" in navigator)){
       gpsBox.className = "gps-box err";
-      gpsMsg.textContent = "Este navegador não tem GPS disponível.";
+      gpsMsg.textContent = "Este navegador não oferece GPS.";
       return;
     }
     btnGps.disabled = true;
@@ -714,26 +915,82 @@
       state.gps = {
         lat: pos.coords.latitude,
         lng: pos.coords.longitude,
-        acc: Math.round(pos.coords.accuracy)
+        acc: Math.round(pos.coords.accuracy),
+        ajustado: false
       };
-      gpsBox.className = "gps-box ok";
-      gpsMsg.textContent = "Localização capturada";
-      gpsCoords.innerHTML = "<b>" + state.gps.lat.toFixed(6) + ", " + state.gps.lng.toFixed(6) + "</b> · precisão ±" + state.gps.acc + "m";
-      gpsMapsLink.href = "https://www.google.com/maps?q=" + state.gps.lat + "," + state.gps.lng;
-      gpsMapsLink.hidden = false;
+      state.gpsOriginal = { lat: state.gps.lat, lng: state.gps.lng };
       btnGps.disabled = false;
-      btnGps.textContent = "📍 Capturar novamente";
-      validarForm();
+      btnGps.textContent = "📍 Usar minha localização";
+      mostrarGps();
+      if (state.mapAjuste) posicionarAjuste(state.gps.lat, state.gps.lng, 18);
     }, function(err){
       gpsBox.className = "gps-box err";
-      var msgs = {1:"Permissão de localização negada.", 2:"Localização indisponível aqui.", 3:"Tempo esgotado ao buscar localização."};
+      var msgs = {
+        1: "Permissão de localização negada. Libere nas configurações do navegador, ou marque o ponto no mapa.",
+        2: "Localização indisponível aqui. Marque o ponto no mapa.",
+        3: "Tempo esgotado buscando o GPS. Tente de novo ou marque no mapa."
+      };
       gpsMsg.textContent = msgs[err.code] || "Não foi possível capturar a localização.";
       btnGps.disabled = false;
       btnGps.textContent = "📍 Tentar novamente";
     }, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
   });
 
-  /* ---------------- Formulário: validação e envio ---------------- */
+  function posicionarAjuste(lat, lng, zoom){
+    if (!state.mapAjuste) return;
+    state.marcadorAjuste.setLatLng([lat, lng]);
+    state.mapAjuste.setView([lat, lng], zoom || state.mapAjuste.getZoom());
+  }
+
+  function initMapAjuste(){
+    if (!leafletOk()){
+      document.getElementById("mapAjuste").innerHTML =
+        '<div class="empty">O mapa não carregou — sinal fraco. ' +
+        'Use o botão de localização; o registro continua funcionando.</div>';
+      return;
+    }
+    if (state.mapAjuste){ setTimeout(function(){ state.mapAjuste.invalidateSize(); }, 60); return; }
+    var inicial = state.gps ? [state.gps.lat, state.gps.lng] : CENTRO_PADRAO;
+    var zoom = state.gps ? 18 : 12;
+    state.mapAjuste = L.map("mapAjuste", { zoomControl: true }).setView(inicial, zoom);
+    state.camadasAjuste = criarCamadas();
+    state.camadasAjuste.ruas.addTo(state.mapAjuste);
+    ligarSeletorCamada(state.mapAjuste, state.camadasAjuste,
+      document.getElementById("ajusteRuas"), document.getElementById("ajusteSat"));
+
+    state.marcadorAjuste = L.marker(inicial, { draggable: true }).addTo(state.mapAjuste);
+    state.marcadorAjuste.on("dragend", function(){
+      var p = state.marcadorAjuste.getLatLng();
+      definirPontoManual(p.lat, p.lng);
+    });
+    state.mapAjuste.on("click", function(e){
+      state.marcadorAjuste.setLatLng(e.latlng);
+      definirPontoManual(e.latlng.lat, e.latlng.lng);
+    });
+    setTimeout(function(){ state.mapAjuste.invalidateSize(); }, 60);
+  }
+
+  function definirPontoManual(lat, lng){
+    state.gps = { lat: lat, lng: lng, acc: null, ajustado: true };
+    mostrarGps();
+  }
+
+  btnAjustar.addEventListener("click", function(){
+    var aberto = mapAjusteWrap.classList.toggle("show");
+    btnAjustar.textContent = aberto ? "🗺️ Fechar o mapa" : "🗺️ Ajustar no mapa";
+    if (aberto) initMapAjuste();
+  });
+
+  document.getElementById("btnCentralizar").addEventListener("click", function(){
+    if (!state.gpsOriginal){ toast("Capture a localização primeiro para poder voltar a ela.", "info"); return; }
+    posicionarAjuste(state.gpsOriginal.lat, state.gpsOriginal.lng, 18);
+    definirPontoManual(state.gpsOriginal.lat, state.gpsOriginal.lng);
+    state.gps.ajustado = false;
+    state.gps.acc = null;
+    mostrarGps();
+  });
+
+  /* ---------------- validação e envio ---------------- */
   var form = document.getElementById("form");
   var btnSalvar = document.getElementById("btnSalvar");
 
@@ -746,16 +1003,22 @@
     e.preventDefault();
     if (btnSalvar.disabled) return;
 
+    var v = TIPOS[state.tipoSelecionado].vinculo;
     var payload = {
       tipo: state.tipoSelecionado,
       patrimonio: inputPatrimonio.value.trim(),
-      patrimonioModulo: document.getElementById("vinculado").checked ? document.getElementById("patrimonioModulo").value.trim() : "",
+      patrimonioModulo: "",
+      patrimonioAC: "",
       observacao: document.getElementById("observacao").value.trim(),
       responsavel: inputResponsavel.value.trim(),
       lat: state.gps.lat,
       lng: state.gps.lng,
-      precisao: state.gps.acc
+      precisao: state.gps.acc || "",
+      ajusteManual: !!state.gps.ajustado
     };
+    if (v && temVinculo.checked && vinculoPatrimonio.value.trim()){
+      payload[v.campo] = vinculoPatrimonio.value.trim();
+    }
 
     btnSalvar.disabled = true;
     btnSalvar.textContent = "Salvando...";
@@ -767,11 +1030,9 @@
       var fila = getFila();
       fila.push(payload);
       setFila(fila);
-      if (!navigator.onLine || err.message === "sem_url"){
-        toast("Sem conexão — o registro foi salvo neste aparelho e será enviado automaticamente.", "info");
-      } else {
-        toast("Não deu pra enviar agora — o registro ficou salvo neste aparelho e tentaremos de novo.", "info");
-      }
+      toast(!navigator.onLine || err.message === "sem_url"
+        ? "Sem conexão — guardado neste aparelho e enviado assim que a rede voltar."
+        : "Não deu para enviar agora — guardado neste aparelho e será reenviado sozinho.", "info");
       limparFormParcial();
     }).then(function(){
       btnSalvar.textContent = "Salvar registro";
@@ -782,53 +1043,44 @@
   function limparFormParcial(){
     inputPatrimonio.value = "";
     document.getElementById("observacao").value = "";
-    document.getElementById("vinculado").checked = false;
-    document.getElementById("patrimonioModulo").value = "";
-    document.getElementById("patrModuloWrap").hidden = true;
+    temVinculo.checked = false;
+    vinculoPatrimonio.value = "";
+    vinculoCampoWrap.hidden = true;
     state.gps = null;
-    gpsBox.className = "gps-box";
-    gpsMsg.textContent = "Ainda não capturada";
-    gpsCoords.innerHTML = "";
-    gpsMapsLink.hidden = true;
-    // mantém responsável e tipo selecionado, pra agilizar o próximo item da mesma área
+    mostrarGps();
+    // mantém responsável e tipo, para agilizar o próximo item da mesma área
   }
 
-  /* ---------------- Config avançada ---------------- */
+  /* ---------------- configuração ---------------- */
   var apiUrlInput = document.getElementById("apiUrlInput");
   apiUrlInput.value = lsGet(STORAGE.apiUrl, "");
   document.getElementById("btnSalvarApi").addEventListener("click", function(){
     lsSet(STORAGE.apiUrl, apiUrlInput.value.trim());
     toast("URL salva neste aparelho.", "ok");
+    carregarRegistros();
   });
 
-  /* ---------------- Carregar registros do backend ---------------- */
+  /* ---------------- carregar dados ---------------- */
   function carregarRegistros(){
-    var url = getApiUrl();
-    if (!url || url.indexOf("http") !== 0){
-      renderMapa(); renderLista();
-      return;
-    }
-    fetch(url).then(function(r){ return r.json(); }).then(function(j){
+    if (!apiOk()){ renderMapa(); renderLista(); return; }
+    fetch(getApiUrl()).then(function(r){ return r.json(); }).then(function(j){
       if (j && j.ok && Array.isArray(j.registros)){
         state.registros = j.registros;
         lsSetJSON(STORAGE.cache, state.registros);
       }
       renderMapa(); renderLista();
-    }).catch(function(){
-      renderMapa(); renderLista();
-    });
+    }).catch(function(){ renderMapa(); renderLista(); });
   }
 
-  /* ---------------- Chips de filtro (compartilhados) ---------------- */
+  /* ---------------- chips ---------------- */
   function montarChips(container, filtros, onToggle){
     container.innerHTML = "";
     Object.keys(TIPOS).forEach(function(key){
-      var t = TIPOS[key];
       var chip = document.createElement("button");
       chip.type = "button";
       chip.className = "chip" + (filtros[key] ? "" : " off");
-      chip.style.setProperty("--chipcolor", TIPO_HEX[key]);
-      chip.innerHTML = '<span class="sw"></span>' + t.label;
+      chip.style.setProperty("--chipcolor", TIPOS[key].hex);
+      chip.innerHTML = '<span class="sw"></span>' + TIPOS[key].label;
       chip.addEventListener("click", function(){
         filtros[key] = !filtros[key];
         chip.classList.toggle("off", !filtros[key]);
@@ -837,96 +1089,107 @@
       container.appendChild(chip);
     });
   }
-  montarChips(document.getElementById("chipsMapa"), state.filtrosMapa, function(){ renderMapa(); });
-  montarChips(document.getElementById("chipsLista"), state.filtrosLista, function(){ renderLista(); });
+  montarChips(document.getElementById("chipsMapa"), state.filtrosMapa, renderMapa);
+  montarChips(document.getElementById("chipsLista"), state.filtrosLista, renderLista);
 
-  /* ---------------- Mapa ---------------- */
-  function initMapaSeNecessario(){
-    if (state.mapLoaded) { setTimeout(function(){ state.map.invalidateSize(); }, 50); return; }
-    state.map = L.map("map", { zoomControl: true }).setView([-6.05, -50.15], 12); // região de Carajás/PA por padrão
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-      attribution: "© OpenStreetMap"
-    }).addTo(state.map);
+  /* ---------------- mapa coletivo ---------------- */
+  function initMapa(){
+    if (!leafletOk()){
+      document.getElementById("map").innerHTML =
+        '<div class="empty">O mapa não carregou — sinal fraco. ' +
+        'Os registros continuam na aba Lista e podem ser exportados.</div>';
+      return;
+    }
+    if (state.mapLoaded){ setTimeout(function(){ state.map.invalidateSize(); }, 60); return; }
+    state.map = L.map("map", { zoomControl: true }).setView(CENTRO_PADRAO, 11);
+    state.camadasMapa = criarCamadas();
+    state.camadasMapa.ruas.addTo(state.map);
+    ligarSeletorCamada(state.map, state.camadasMapa,
+      document.getElementById("mapaRuas"), document.getElementById("mapaSat"));
     state.mapLoaded = true;
+    setTimeout(function(){ state.map.invalidateSize(); }, 60);
   }
 
   function iconePara(tipo){
-    var hex = TIPO_HEX[tipo] || "#555";
-    var emoji = (TIPOS[tipo] || {}).emoji || "📍";
+    var t = TIPOS[tipo] || { hex: "#555", emoji: "📍" };
     return L.divIcon({
       className: "",
-      html: '<div style="width:30px;height:30px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:' + hex + ';border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;"><span style="transform:rotate(45deg);font-size:14px;">' + emoji + '</span></div>',
-      iconSize: [30, 30],
-      iconAnchor: [15, 29],
-      popupAnchor: [0, -28]
+      html: '<div style="width:30px;height:30px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);' +
+            'background:' + t.hex + ';border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);' +
+            'display:flex;align-items:center;justify-content:center;">' +
+            '<span style="transform:rotate(45deg);font-size:14px;">' + t.emoji + '</span></div>',
+      iconSize: [30, 30], iconAnchor: [15, 29], popupAnchor: [0, -28]
     });
   }
 
-  function formatarData(iso){
-    try {
-      var d = new Date(iso);
-      return d.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit" });
-    } catch(e){ return iso || "—"; }
+  function vinculoTexto(reg){
+    if (reg.patrimonio_modulo) return "Acoplado ao módulo " + reg.patrimonio_modulo;
+    if (reg.patrimonio_ac) return "Ar-condicionado " + reg.patrimonio_ac;
+    return "";
   }
+
+  function chaveDe(reg, lat, lng){ return reg.id || (lat + "," + lng + "," + reg.patrimonio); }
 
   function renderMapa(){
     var count = document.getElementById("mapaCount");
-    if (!state.mapLoaded){ if(count) count.textContent=""; return; }
-    Object.keys(state.markers).forEach(function(id){ state.map.removeLayer(state.markers[id]); });
+    if (!state.mapLoaded){ if (count) count.textContent = ""; return; }
+    Object.keys(state.markers).forEach(function(k){ state.map.removeLayer(state.markers[k]); });
     state.markers = {};
-    var visiveis = 0;
-    var bounds = [];
+    var bounds = [], visiveis = 0;
+
     state.registros.forEach(function(reg){
       if (!state.filtrosMapa[reg.tipo]) return;
-      if (reg.lat == null || reg.lng == null || reg.lat === "" || reg.lng === "") return;
       var lat = parseFloat(reg.lat), lng = parseFloat(reg.lng);
       if (isNaN(lat) || isNaN(lng)) return;
+      var t = TIPOS[reg.tipo] || { label: reg.tipo, hex: "#555" };
+      var vinc = vinculoTexto(reg);
       var marker = L.marker([lat, lng], { icon: iconePara(reg.tipo) }).addTo(state.map);
-      var t = TIPOS[reg.tipo] || { label: reg.tipo };
-      var extra = reg.patrimonio_modulo ? ("<br>Módulo vinculado: " + escapeHtml(reg.patrimonio_modulo)) : "";
-      var obs = reg.observacao ? ("<br>" + escapeHtml(reg.observacao)) : "";
       marker.bindPopup(
         '<div class="popup-card">' +
-          '<div class="tipo" style="color:' + (TIPO_HEX[reg.tipo]||"#555") + '">' + t.label + '</div>' +
+          '<div class="tipo" style="color:' + t.hex + '">' + escapeHtml(t.label) + '</div>' +
           '<div class="patr">' + escapeHtml(reg.patrimonio || "—") + '</div>' +
-          '<div class="meta">' + escapeHtml(reg.responsavel || "—") + ' · ' + formatarData(reg.timestamp) + extra + obs + '</div>' +
+          '<div class="meta">' +
+            escapeHtml(reg.responsavel || "—") + ' · ' + formatarData(reg.timestamp) +
+            (vinc ? '<br>' + escapeHtml(vinc) : '') +
+            (reg.observacao ? '<br>' + escapeHtml(reg.observacao) : '') +
+            (reg.endereco ? '<br>' + escapeHtml(reg.endereco) : '') +
+            '<br><a href="https://www.google.com/maps?q=' + lat + ',' + lng + '" target="_blank" rel="noopener">Abrir no Google Maps</a>' +
+          '</div>' +
         '</div>'
       );
-      state.markers[reg.id || (lat+","+lng)] = marker;
+      state.markers[chaveDe(reg, lat, lng)] = marker;
       bounds.push([lat, lng]);
       visiveis++;
     });
+
     if (count) count.textContent = visiveis + " no mapa";
-    if (bounds.length) {
+    if (bounds.length){
       try { state.map.fitBounds(bounds, { padding: [30,30], maxZoom: 17 }); } catch(e){}
     }
   }
 
   document.getElementById("btnRecarregarMapa").addEventListener("click", carregarRegistros);
 
-  /* ---------------- Lista ---------------- */
+  /* ---------------- lista ---------------- */
   var buscaInput = document.getElementById("busca");
   buscaInput.addEventListener("input", renderLista);
   document.getElementById("btnRecarregarLista").addEventListener("click", carregarRegistros);
 
-  function escapeHtml(s){
-    return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
-      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
-    });
+  function registrosFiltrados(){
+    var termo = buscaInput.value.trim().toLowerCase();
+    return state.registros.filter(function(r){
+      if (!state.filtrosLista[r.tipo]) return false;
+      if (!termo) return true;
+      return String(r.patrimonio || "").toLowerCase().indexOf(termo) !== -1
+          || String(r.patrimonio_modulo || "").toLowerCase().indexOf(termo) !== -1
+          || String(r.patrimonio_ac || "").toLowerCase().indexOf(termo) !== -1;
+    }).sort(function(a,b){ return new Date(b.timestamp) - new Date(a.timestamp); });
   }
 
   function renderLista(){
     var wrap = document.getElementById("listaItems");
-    var countEl = document.getElementById("listaCount");
-    var termo = buscaInput.value.trim().toLowerCase();
-    var itens = state.registros.filter(function(r){
-      if (!state.filtrosLista[r.tipo]) return false;
-      if (termo && (r.patrimonio || "").toLowerCase().indexOf(termo) === -1) return false;
-      return true;
-    }).sort(function(a,b){ return new Date(b.timestamp) - new Date(a.timestamp); });
-
-    countEl.textContent = itens.length + " registro" + (itens.length === 1 ? "" : "s");
+    var itens = registrosFiltrados();
+    document.getElementById("listaCount").textContent = itens.length + " registro" + (itens.length === 1 ? "" : "s");
     wrap.innerHTML = "";
 
     if (!itens.length){
@@ -935,42 +1198,95 @@
     }
 
     itens.forEach(function(reg){
-      var t = TIPOS[reg.tipo] || { label: reg.tipo || "—" };
+      var t = TIPOS[reg.tipo] || { label: reg.tipo || "—", hex: "#555" };
+      var vinc = vinculoTexto(reg);
       var card = document.createElement("div");
       card.className = "item-card";
-      card.style.setProperty("--icolor", TIPO_HEX[reg.tipo] || "#555");
-      var extra = reg.patrimonio_modulo ? ("· módulo " + escapeHtml(reg.patrimonio_modulo)) : "";
+      card.style.setProperty("--icolor", t.hex);
       card.innerHTML =
         '<div class="dot"></div>' +
         '<div class="body">' +
-          '<div class="row1"><span class="patr">' + escapeHtml(reg.patrimonio || "—") + '</span><span class="tipo">' + t.label + '</span></div>' +
-          '<div class="meta">' + escapeHtml(reg.responsavel || "—") + ' · ' + formatarData(reg.timestamp) + ' ' + extra + '</div>' +
+          '<div class="row1"><span class="patr">' + escapeHtml(reg.patrimonio || "—") + '</span>' +
+          '<span class="tipo">' + escapeHtml(t.label) + '</span></div>' +
+          '<div class="meta">' + escapeHtml(reg.responsavel || "—") + ' · ' + formatarData(reg.timestamp) + '</div>' +
+          (vinc ? '<div class="vinc">🔗 ' + escapeHtml(vinc) + '</div>' : '') +
           (reg.observacao ? '<div class="obs">' + escapeHtml(reg.observacao) + '</div>' : '') +
         '</div>' +
-        '<button type="button" class="btn btn-ghost btn-sm" data-ver="1">Ver no mapa</button>';
-      card.querySelector("[data-ver]").addEventListener("click", function(){
+        '<button type="button" class="btn btn-ghost btn-sm">Ver no mapa</button>';
+
+      card.querySelector("button").addEventListener("click", function(){
         irParaAba("mapa");
-        initMapaSeNecessario();
+        initMapa();
         setTimeout(function(){
           var lat = parseFloat(reg.lat), lng = parseFloat(reg.lng);
           if (!isNaN(lat) && !isNaN(lng) && state.map){
             state.map.setView([lat, lng], 18);
-            var m = state.markers[reg.id || (lat+","+lng)];
+            var m = state.markers[chaveDe(reg, lat, lng)];
             if (m) m.openPopup();
           }
-        }, 150);
+        }, 200);
       });
       wrap.appendChild(card);
     });
   }
 
-  /* ---------------- Início ---------------- */
-  atualizarStatus();
-  validarForm();
-  renderLista();
-  if (getApiUrl() && getApiUrl().indexOf("http") === 0){
-    carregarRegistros();
+  /* ---------------- exportar planilha ---------------- */
+  function csvCampo(v){
+    var s = String(v == null ? "" : v);
+    return '"' + s.replace(/"/g, '""') + '"';
   }
+
+  document.getElementById("btnExportar").addEventListener("click", function(){
+    var itens = registrosFiltrados();
+    if (!itens.length){ toast("Não há registros para exportar.", "info"); return; }
+
+    var colunas = ["Tipo","Patrimônio","Módulo acoplado","Ar-condicionado","Responsável",
+                   "Data/hora","Latitude","Longitude","Precisão (m)","Pino ajustado à mão",
+                   "Endereço","Link do Google Maps","Observação"];
+    var linhas = [colunas.map(csvCampo).join(";")];
+
+    itens.forEach(function(r){
+      var t = TIPOS[r.tipo] || { label: r.tipo || "" };
+      var lat = r.lat, lng = r.lng;
+      linhas.push([
+        t.label,
+        r.patrimonio,
+        r.patrimonio_modulo,
+        r.patrimonio_ac,
+        r.responsavel,
+        formatarData(r.timestamp),
+        String(lat).replace(".", ","),
+        String(lng).replace(".", ","),
+        r.precisao,
+        r.ajuste_manual === "sim" ? "Sim" : "Não",
+        r.endereco,
+        r.link_maps || ("https://www.google.com/maps?q=" + lat + "," + lng),
+        r.observacao
+      ].map(csvCampo).join(";"));
+    });
+
+    var conteudo = "﻿" + linhas.join("\r\n");
+    var blob = new Blob([conteudo], { type: "text/csv;charset=utf-8;" });
+    var url = URL.createObjectURL(blob);
+    var hoje = new Date();
+    var nome = "conta-ai_" + hoje.getFullYear() +
+               String(hoje.getMonth()+1).padStart(2,"0") +
+               String(hoje.getDate()).padStart(2,"0") + ".csv";
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = nome;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 2000);
+    toast(itens.length + " registro" + (itens.length>1?"s":"") + " exportado" + (itens.length>1?"s":"") + ".", "ok");
+  });
+
+  /* ---------------- início ---------------- */
+  atualizarStatus();
+  mostrarGps();
+  renderLista();
+  if (apiOk()) carregarRegistros();
   if (getFila().length && navigator.onLine) sincronizarFila();
 
 })();
