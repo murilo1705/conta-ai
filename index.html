@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Conta-AI</title>
+<meta name="description" content="Inventário de campo com localização — módulos, ar-condicionados, banheiros, sobretetos e caixas de dejetos.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #eef0ee;
+    --surface: #ffffff;
+    --surface-2: #e3e6e2;
+    --border: #d3d7d1;
+    --text: #1b1f1c;
+    --text-muted: #5c625d;
+    --accent: #e08900;
+    --accent-ink: #3a2200;
+    --accent-2: #a13d2c;
+    --ok: #2f7d5b;
+    --danger: #b3261e;
+    --modulo: #2f6690;
+    --ar: #1f9e8a;
+    --banheiro: #6b5b95;
+    --sobreteto: #d97706;
+    --caixa: #7a5230;
+    --radius: 14px;
+    --shadow: 0 1px 2px rgba(20,20,15,0.06), 0 4px 14px rgba(20,20,15,0.06);
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #14161a;
+      --surface: #1c1f23;
+      --surface-2: #24282c;
+      --border: #33383d;
+      --text: #f1efe9;
+      --text-muted: #a2a8a4;
+      --accent: #f0a230;
+      --accent-ink: #1a1000;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 4px 14px rgba(0,0,0,0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #14161a;
+    --surface: #1c1f23;
+    --surface-2: #24282c;
+    --border: #33383d;
+    --text: #f1efe9;
+    --text-muted: #a2a8a4;
+    --accent: #f0a230;
+    --accent-ink: #1a1000;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 4px 14px rgba(0,0,0,0.35);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Barlow", -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    display: flex;
+    flex-direction: column;
+  }
+  h1, h2, h3, .display {
+    font-family: "Barlow Condensed", "Barlow", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    text-wrap: balance;
+    margin: 0;
+  }
+  .mono {
+    font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+  a { color: var(--accent-2); }
+
+  /* ---------- App shell ---------- */
+  #app { display: flex; flex-direction: column; height: 100%; }
+
+  header.topbar {
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    z-index: 20;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .brand { display: flex; align-items: baseline; gap: 8px; }
+  .brand .mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-family: "Barlow Condensed", sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    flex: none;
+  }
+  .brand h1 { font-size: 22px; line-height: 1; }
+  .brand .tagline { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+  .status-pill {
+    font-size: 11px;
+    padding: 5px 9px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+  .status-pill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); flex: none; }
+  .status-pill.off .dot { background: var(--danger); }
+  .status-pill.pending { color: var(--accent-ink); background: color-mix(in srgb, var(--accent) 20%, transparent); border-color: transparent; }
+  .status-pill.pending .dot { background: var(--accent); }
+
+  main { flex: 1; overflow-y: auto; padding: 16px 16px calc(96px + env(safe-area-inset-bottom, 0px)); max-width: 640px; width: 100%; margin: 0 auto; }
+
+  nav.tabbar {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    display: flex;
+    z-index: 30;
+  }
+  nav.tabbar button {
+    flex: 1;
+    background: none;
+    border: none;
+    padding: 10px 4px 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    color: var(--text-muted);
+    font: inherit;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  nav.tabbar button svg { width: 22px; height: 22px; }
+  nav.tabbar button.active { color: var(--accent-ink); }
+  nav.tabbar button.active svg { color: var(--accent); }
+  nav.tabbar button .badge {
+    position: absolute;
+    transform: translate(11px, -9px);
+    background: var(--accent-2);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    border-radius: 999px;
+    min-width: 15px;
+    height: 15px;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0 4px;
+  }
+
+  section.tab { display: none; }
+  section.tab.active { display: block; animation: fade .18s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(4px);} to { opacity: 1; transform: none; } }
+
+  /* ---------- Cards / forms ---------- */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 16px;
+  }
+  .stack { display: flex; flex-direction: column; gap: 14px; }
+  .field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+  .field input[type="text"],
+  .field textarea,
+  .field select {
+    width: 100%;
+    font: inherit;
+    font-size: 16px;
+    padding: 12px 12px;
+    border-radius: 10px;
+    border: 1.5px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+  }
+  .field textarea { resize: vertical; min-height: 64px; }
+  .field input:focus, .field textarea:focus, .field select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  .type-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
+    gap: 8px;
+  }
+  .type-btn {
+    border: 1.5px solid var(--border);
+    background: var(--bg);
+    border-radius: 12px;
+    padding: 10px 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    color: var(--text);
+    font: inherit;
+  }
+  .type-btn .ico {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    color: #fff;
+  }
+  .type-btn span.label { font-size: 12px; font-weight: 600; text-align: center; line-height: 1.15; }
+  .type-btn.selected { border-color: var(--tcolor); background: color-mix(in srgb, var(--tcolor) 12%, var(--surface)); }
+
+  .checkline { display: flex; align-items: flex-start; gap: 10px; }
+  .checkline input { margin-top: 3px; width: 18px; height: 18px; flex: none; }
+  .checkline label { font-size: 14px; color: var(--text); }
+
+  .gps-box {
+    border: 1.5px dashed var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .gps-status { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+  .gps-status .crosshair {
+    width: 34px; height: 34px; flex: none;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-muted);
+    position: relative;
+  }
+  .gps-box.ok .crosshair { border-color: var(--ok); color: var(--ok); }
+  .gps-box.err .crosshair { border-color: var(--danger); color: var(--danger); }
+  .gps-coords { font-size: 13px; color: var(--text-muted); }
+  .gps-coords b { color: var(--text); }
+
+  button.btn {
+    font: inherit;
+    font-weight: 700;
+    font-size: 15px;
+    border-radius: 12px;
+    border: none;
+    padding: 13px 16px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn-accent { background: var(--accent); color: var(--accent-ink); width: 100%; }
+  .btn-accent:disabled { opacity: 0.45; cursor: not-allowed; }
+  .btn-outline { background: transparent; border: 1.5px solid var(--border); color: var(--text); width: 100%; }
+  .btn-ghost { background: var(--surface-2); color: var(--text); }
+  .btn-sm { padding: 8px 12px; font-size: 13px; border-radius: 9px; }
+
+  .toast {
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 13.5px;
+    display: none;
+    align-items: flex-start;
+    gap: 8px;
+    line-height: 1.4;
+  }
+  .toast.show { display: flex; }
+  .toast.ok { background: color-mix(in srgb, var(--ok) 16%, var(--surface)); color: var(--ok); }
+  .toast.err { background: color-mix(in srgb, var(--danger) 16%, var(--surface)); color: var(--danger); }
+  .toast.info { background: color-mix(in srgb, var(--accent) 18%, var(--surface)); color: var(--accent-ink); }
+
+  .section-title { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; }
+  .section-title h2 { font-size: 19px; }
+  .section-title .count { font-size: 12px; color: var(--text-muted); }
+
+  /* ---------- Mapa ---------- */
+  #mapa-wrap { display: flex; flex-direction: column; gap: 10px; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip {
+    border: 1.5px solid var(--chipcolor, var(--border));
+    color: var(--chipcolor, var(--text));
+    background: var(--surface);
+    border-radius: 999px;
+    padding: 6px 11px;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .chip .sw { width: 9px; height: 9px; border-radius: 50%; background: var(--chipcolor); flex: none; }
+  .chip.off { opacity: 0.4; }
+  #map {
+    width: 100%;
+    height: min(58vh, 480px);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+  }
+  .leaflet-popup-content-wrapper { background: var(--surface); color: var(--text); border-radius: 10px; }
+  .leaflet-popup-tip { background: var(--surface); }
+  .popup-card { font-family: "Barlow", sans-serif; min-width: 190px; }
+  .popup-card .tipo { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+  .popup-card .patr { font-family: "IBM Plex Mono", monospace; font-size: 15px; font-weight: 600; margin: 3px 0 6px; }
+  .popup-card .meta { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+
+  /* ---------- Lista ---------- */
+  .search-row { display: flex; gap: 8px; }
+  .search-row input {
+    flex: 1;
+    font: inherit; font-size: 15px;
+    padding: 11px 12px;
+    border-radius: 10px;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+  }
+  .list-items { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+  .item-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .item-card .dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 5px; flex: none; background: var(--icolor); }
+  .item-card .body { flex: 1; min-width: 0; }
+  .item-card .row1 { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+  .item-card .patr { font-family: "IBM Plex Mono", monospace; font-weight: 600; font-size: 15px; }
+  .item-card .tipo { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--icolor); }
+  .item-card .meta { font-size: 12.5px; color: var(--text-muted); margin-top: 3px; line-height: 1.5; }
+  .item-card .obs { font-size: 12.5px; color: var(--text); margin-top: 4px; }
+  .item-card button.btn-sm { flex: none; }
+
+  .empty {
+    text-align: center;
+    padding: 40px 16px;
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+  .empty .big { font-size: 34px; display: block; margin-bottom: 8px; }
+
+  .fila-banner {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    background: color-mix(in srgb, var(--accent) 16%, var(--surface));
+    color: var(--accent-ink);
+    border-radius: 10px;
+    padding: 9px 12px;
+    font-size: 12.5px;
+    margin-bottom: 12px;
+  }
+  .fila-banner.show { display: flex; }
+
+  .cfg-row { display: flex; gap: 8px; align-items: center; margin-top: 14px; }
+  .cfg-row summary { font-size: 12px; color: var(--text-muted); cursor: pointer; }
+  .cfg-box { margin-top: 8px; display: flex; flex-direction: column; gap: 8px; }
+  .cfg-box input { font-family: "IBM Plex Mono", monospace; font-size: 12px; padding: 9px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="mark">CA</span>
+      <div>
+        <h1>Conta-AI</h1>
+        <div class="tagline">Inventário de campo</div>
+      </div>
+    </div>
+    <div id="statusPill" class="status-pill"><span class="dot"></span><span id="statusTxt">online</span></div>
+  </header>
+
+  <main>
+
+    <!-- ===================== TAB: REGISTRAR ===================== -->
+    <section id="tab-registrar" class="tab active">
+      <div class="fila-banner" id="filaBanner">
+        <span>⏳</span>
+        <span id="filaBannerTxt"></span>
+      </div>
+
+      <form id="form" class="card stack" autocomplete="off">
+
+        <div class="field">
+          <label for="responsavel">Quem está registrando</label>
+          <input type="text" id="responsavel" name="responsavel" placeholder="Seu nome" required>
+        </div>
+
+        <div class="field">
+          <label>Tipo de item</label>
+          <div class="type-grid" id="tipoGrid"></div>
+        </div>
+
+        <div class="field">
+          <label for="patrimonio">Patrimônio do item</label>
+          <input type="text" id="patrimonio" name="patrimonio" placeholder="Ex: 0123456" required>
+        </div>
+
+        <div class="field" id="campoVinculo" hidden>
+          <div class="checkline">
+            <input type="checkbox" id="vinculado">
+            <label for="vinculado">Este ar-condicionado veio junto com o módulo (mesma nota fiscal)</label>
+          </div>
+          <div id="patrModuloWrap" hidden style="margin-top:10px;">
+            <label for="patrimonioModulo">Patrimônio do módulo vinculado</label>
+            <input type="text" id="patrimonioModulo" placeholder="Patrimônio do módulo">
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="observacao">Observação (opcional)</label>
+          <textarea id="observacao" placeholder="Ex: bloco B, próximo ao refeitório"></textarea>
+        </div>
+
+        <div class="field">
+          <label>Localização</label>
+          <div class="gps-box" id="gpsBox">
+            <div class="gps-status">
+              <div class="crosshair" id="gpsCrosshair">＋</div>
+              <div>
+                <div id="gpsMsg">Ainda não capturada</div>
+                <div class="gps-coords mono" id="gpsCoords"></div>
+              </div>
+            </div>
+            <button type="button" class="btn btn-outline" id="btnGps">📍 Capturar localização atual</button>
+            <a id="gpsMapsLink" href="#" target="_blank" rel="noopener" hidden style="font-size:13px;">Ver no Google Maps ↗</a>
+          </div>
+        </div>
+
+        <div id="toast" class="toast"></div>
+
+        <button type="submit" class="btn btn-accent" id="btnSalvar" disabled>Salvar registro</button>
+      </form>
+
+      <details class="cfg-row">
+        <summary>Configuração avançada</summary>
+        <div class="cfg-box">
+          <label style="font-size:11px;color:var(--text-muted);">URL do backend (Apps Script)</label>
+          <input type="text" id="apiUrlInput" placeholder="https://script.google.com/macros/s/.../exec">
+          <button type="button" class="btn btn-ghost btn-sm" id="btnSalvarApi">Salvar URL neste aparelho</button>
+        </div>
+      </details>
+    </section>
+
+    <!-- ===================== TAB: MAPA ===================== -->
+    <section id="tab-mapa" class="tab">
+      <div class="section-title">
+        <h2>Mapa coletivo</h2>
+        <span class="count" id="mapaCount"></span>
+      </div>
+      <div id="mapa-wrap">
+        <div class="chips" id="chipsMapa"></div>
+        <div id="map"></div>
+        <button type="button" class="btn btn-outline" id="btnRecarregarMapa">↻ Recarregar dados</button>
+      </div>
+    </section>
+
+    <!-- ===================== TAB: LISTA ===================== -->
+    <section id="tab-lista" class="tab">
+      <div class="section-title">
+        <h2>Todos os registros</h2>
+        <span class="count" id="listaCount"></span>
+      </div>
+      <div class="search-row">
+        <input type="text" id="busca" placeholder="Buscar por patrimônio...">
+        <button type="button" class="btn btn-outline btn-sm" id="btnRecarregarLista">↻</button>
+      </div>
+      <div class="chips" id="chipsLista" style="margin-top:8px;"></div>
+      <div class="list-items" id="listaItems"></div>
+    </section>
+
+  </main>
+
+  <nav class="tabbar">
+    <button class="tab-btn active" data-tab="registrar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+      Registrar
+    </button>
+    <button class="tab-btn" data-tab="mapa" style="position:relative;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 20l-6-3V4l6 3 6-3 6 3v13l-6-3-6 3z"/><path d="M9 4v13M15 7v13"/></svg>
+      Mapa
+      <span class="badge" id="badgePendentes" hidden></span>
+    </button>
+    <button class="tab-btn" data-tab="lista">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+      Lista
+    </button>
+  </nav>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* =========================================================
+     CONFIGURAÇÃO
+     Depois de publicar o backend (Google Apps Script), cole a
+     URL do Web App aqui. Assim todo mundo que abrir o link já
+     funciona, sem precisar configurar nada em cada aparelho.
+  ========================================================= */
+  var DEFAULT_API_URL = "COLE_AQUI_A_URL_DO_APPS_SCRIPT";
+
+  var STORAGE = {
+    responsavel: "contaai_responsavel",
+    apiUrl: "contaai_api_url",
+    fila: "contaai_fila",
+    cache: "contaai_cache"
+  };
+
+  var TIPOS = {
+    modulo:          { label: "Módulo",           color: "var(--modulo)",   emoji: "📦" },
+    ar_condicionado: { label: "Ar-condicionado",  color: "var(--ar)",       emoji: "❄️" },
+    banheiro:        { label: "Banheiro",         color: "var(--banheiro)", emoji: "🚻" },
+    sobreteto:       { label: "Sobreteto",        color: "var(--sobreteto)",emoji: "⛱️" },
+    caixa_dejetos:   { label: "Caixa de dejetos", color: "var(--caixa)",    emoji: "🗑️" }
+  };
+  var TIPO_HEX = { modulo:"#2f6690", ar_condicionado:"#1f9e8a", banheiro:"#6b5b95", sobreteto:"#d97706", caixa_dejetos:"#7a5230" };
+
+  function lsGet(k, fallback){ try { var v = localStorage.getItem(k); return v === null ? fallback : v; } catch(e){ return fallback; } }
+  function lsSet(k, v){ try { localStorage.setItem(k, v); } catch(e){} }
+  function lsGetJSON(k, fallback){ try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : fallback; } catch(e){ return fallback; } }
+  function lsSetJSON(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
+
+  function getApiUrl(){
+    var custom = lsGet(STORAGE.apiUrl, "");
+    if (custom) return custom;
+    return DEFAULT_API_URL;
+  }
+
+  var state = {
+    tab: "registrar",
+    tipoSelecionado: null,
+    gps: null, // {lat, lng, acc}
+    filtrosMapa: {},
+    filtrosLista: {},
+    registros: lsGetJSON(STORAGE.cache, []),
+    map: null,
+    markers: {},
+    mapLoaded: false
+  };
+  Object.keys(TIPOS).forEach(function(t){ state.filtrosMapa[t] = true; state.filtrosLista[t] = true; });
+
+  /* ---------------- Status online/offline + fila ---------------- */
+  var statusPill = document.getElementById("statusPill");
+  var statusTxt = document.getElementById("statusTxt");
+  var filaBanner = document.getElementById("filaBanner");
+  var filaBannerTxt = document.getElementById("filaBannerTxt");
+  var badgePendentes = document.getElementById("badgePendentes");
+
+  function getFila(){ return lsGetJSON(STORAGE.fila, []); }
+  function setFila(f){ lsSetJSON(STORAGE.fila, f); atualizarStatus(); }
+
+  function atualizarStatus(){
+    var fila = getFila();
+    var online = navigator.onLine;
+    statusPill.className = "status-pill" + (online ? "" : " off") + (fila.length ? " pending" : "");
+    statusTxt.textContent = fila.length
+      ? (fila.length + " pendente" + (fila.length > 1 ? "s" : ""))
+      : (online ? "online" : "sem conexão");
+    if (fila.length){
+      filaBanner.classList.add("show");
+      filaBannerTxt.textContent = fila.length + " registro" + (fila.length>1?"s":"") + " salvo" + (fila.length>1?"s":"") + " neste aparelho, aguardando conexão para enviar.";
+      badgePendentes.hidden = false;
+      badgePendentes.textContent = fila.length;
+    } else {
+      filaBanner.classList.remove("show");
+      badgePendentes.hidden = true;
+    }
+  }
+
+  window.addEventListener("online", function(){ atualizarStatus(); sincronizarFila(); });
+  window.addEventListener("offline", atualizarStatus);
+  setInterval(function(){ if (navigator.onLine) sincronizarFila(); }, 30000);
+
+  function postRegistro(payload){
+    var url = getApiUrl();
+    if (!url || url.indexOf("http") !== 0) return Promise.reject(new Error("sem_url"));
+    return fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload)
+    }).then(function(r){
+      if (!r.ok) throw new Error("http_" + r.status);
+      return r.json();
+    }).then(function(j){
+      if (!j || j.ok !== true) throw new Error(j && j.error ? j.error : "erro_desconhecido");
+      return j;
+    });
+  }
+
+  function sincronizarFila(){
+    var fila = getFila();
+    if (!fila.length) return;
+    var item = fila[0];
+    postRegistro(item).then(function(){
+      var atual = getFila();
+      atual.shift();
+      setFila(atual);
+      if (atual.length) sincronizarFila();
+    }).catch(function(){ /* tenta de novo depois */ });
+  }
+
+  /* ---------------- Toast ---------------- */
+  var toastEl = document.getElementById("toast");
+  var toastTimer = null;
+  function toast(msg, tipo){
+    toastEl.textContent = msg;
+    toastEl.className = "toast show " + (tipo || "info");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ toastEl.className = "toast"; }, 5000);
+  }
+
+  /* ---------------- Abas ---------------- */
+  var tabBtns = document.querySelectorAll(".tab-btn");
+  tabBtns.forEach(function(btn){
+    btn.addEventListener("click", function(){ irParaAba(btn.dataset.tab); });
+  });
+  function irParaAba(tab){
+    state.tab = tab;
+    document.querySelectorAll(".tab").forEach(function(s){ s.classList.remove("active"); });
+    document.getElementById("tab-" + tab).classList.add("active");
+    tabBtns.forEach(function(b){ b.classList.toggle("active", b.dataset.tab === tab); });
+    if (tab === "mapa"){ initMapaSeNecessario(); carregarRegistros(); }
+    if (tab === "lista"){ carregarRegistros(); }
+  }
+
+  /* ---------------- Formulário: tipo ---------------- */
+  var tipoGrid = document.getElementById("tipoGrid");
+  Object.keys(TIPOS).forEach(function(key){
+    var t = TIPOS[key];
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "type-btn";
+    btn.style.setProperty("--tcolor", t.color);
+    btn.dataset.tipo = key;
+    btn.innerHTML = '<span class="ico" style="background:' + t.color + '">' + t.emoji + '</span><span class="label">' + t.label + '</span>';
+    btn.addEventListener("click", function(){
+      state.tipoSelecionado = key;
+      tipoGrid.querySelectorAll(".type-btn").forEach(function(b){ b.classList.remove("selected"); });
+      btn.classList.add("selected");
+      document.getElementById("campoVinculo").hidden = (key !== "ar_condicionado");
+      validarForm();
+    });
+    tipoGrid.appendChild(btn);
+  });
+
+  document.getElementById("vinculado").addEventListener("change", function(e){
+    document.getElementById("patrModuloWrap").hidden = !e.target.checked;
+  });
+
+  /* ---------------- Formulário: responsável (lembrar) ---------------- */
+  var inputResponsavel = document.getElementById("responsavel");
+  inputResponsavel.value = lsGet(STORAGE.responsavel, "");
+  inputResponsavel.addEventListener("input", function(){
+    lsSet(STORAGE.responsavel, inputResponsavel.value.trim());
+    validarForm();
+  });
+
+  var inputPatrimonio = document.getElementById("patrimonio");
+  inputPatrimonio.addEventListener("input", validarForm);
+
+  /* ---------------- Formulário: GPS ---------------- */
+  var gpsBox = document.getElementById("gpsBox");
+  var gpsMsg = document.getElementById("gpsMsg");
+  var gpsCoords = document.getElementById("gpsCoords");
+  var gpsMapsLink = document.getElementById("gpsMapsLink");
+  var btnGps = document.getElementById("btnGps");
+
+  btnGps.addEventListener("click", function(){
+    if (!("geolocation" in navigator)){
+      gpsBox.className = "gps-box err";
+      gpsMsg.textContent = "Este navegador não tem GPS disponível.";
+      return;
+    }
+    btnGps.disabled = true;
+    btnGps.textContent = "Capturando...";
+    gpsMsg.textContent = "Aguardando sinal de GPS...";
+    navigator.geolocation.getCurrentPosition(function(pos){
+      state.gps = {
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+        acc: Math.round(pos.coords.accuracy)
+      };
+      gpsBox.className = "gps-box ok";
+      gpsMsg.textContent = "Localização capturada";
+      gpsCoords.innerHTML = "<b>" + state.gps.lat.toFixed(6) + ", " + state.gps.lng.toFixed(6) + "</b> · precisão ±" + state.gps.acc + "m";
+      gpsMapsLink.href = "https://www.google.com/maps?q=" + state.gps.lat + "," + state.gps.lng;
+      gpsMapsLink.hidden = false;
+      btnGps.disabled = false;
+      btnGps.textContent = "📍 Capturar novamente";
+      validarForm();
+    }, function(err){
+      gpsBox.className = "gps-box err";
+      var msgs = {1:"Permissão de localização negada.", 2:"Localização indisponível aqui.", 3:"Tempo esgotado ao buscar localização."};
+      gpsMsg.textContent = msgs[err.code] || "Não foi possível capturar a localização.";
+      btnGps.disabled = false;
+      btnGps.textContent = "📍 Tentar novamente";
+    }, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
+  });
+
+  /* ---------------- Formulário: validação e envio ---------------- */
+  var form = document.getElementById("form");
+  var btnSalvar = document.getElementById("btnSalvar");
+
+  function validarForm(){
+    var ok = inputResponsavel.value.trim() && state.tipoSelecionado && inputPatrimonio.value.trim() && state.gps;
+    btnSalvar.disabled = !ok;
+  }
+
+  form.addEventListener("submit", function(e){
+    e.preventDefault();
+    if (btnSalvar.disabled) return;
+
+    var payload = {
+      tipo: state.tipoSelecionado,
+      patrimonio: inputPatrimonio.value.trim(),
+      patrimonioModulo: document.getElementById("vinculado").checked ? document.getElementById("patrimonioModulo").value.trim() : "",
+      observacao: document.getElementById("observacao").value.trim(),
+      responsavel: inputResponsavel.value.trim(),
+      lat: state.gps.lat,
+      lng: state.gps.lng,
+      precisao: state.gps.acc
+    };
+
+    btnSalvar.disabled = true;
+    btnSalvar.textContent = "Salvando...";
+
+    postRegistro(payload).then(function(){
+      toast("Registro salvo com sucesso.", "ok");
+      limparFormParcial();
+    }).catch(function(err){
+      var fila = getFila();
+      fila.push(payload);
+      setFila(fila);
+      if (!navigator.onLine || err.message === "sem_url"){
+        toast("Sem conexão — o registro foi salvo neste aparelho e será enviado automaticamente.", "info");
+      } else {
+        toast("Não deu pra enviar agora — o registro ficou salvo neste aparelho e tentaremos de novo.", "info");
+      }
+      limparFormParcial();
+    }).then(function(){
+      btnSalvar.textContent = "Salvar registro";
+      validarForm();
+    });
+  });
+
+  function limparFormParcial(){
+    inputPatrimonio.value = "";
+    document.getElementById("observacao").value = "";
+    document.getElementById("vinculado").checked = false;
+    document.getElementById("patrimonioModulo").value = "";
+    document.getElementById("patrModuloWrap").hidden = true;
+    state.gps = null;
+    gpsBox.className = "gps-box";
+    gpsMsg.textContent = "Ainda não capturada";
+    gpsCoords.innerHTML = "";
+    gpsMapsLink.hidden = true;
+    // mantém responsável e tipo selecionado, pra agilizar o próximo item da mesma área
+  }
+
+  /* ---------------- Config avançada ---------------- */
+  var apiUrlInput = document.getElementById("apiUrlInput");
+  apiUrlInput.value = lsGet(STORAGE.apiUrl, "");
+  document.getElementById("btnSalvarApi").addEventListener("click", function(){
+    lsSet(STORAGE.apiUrl, apiUrlInput.value.trim());
+    toast("URL salva neste aparelho.", "ok");
+  });
+
+  /* ---------------- Carregar registros do backend ---------------- */
+  function carregarRegistros(){
+    var url = getApiUrl();
+    if (!url || url.indexOf("http") !== 0){
+      renderMapa(); renderLista();
+      return;
+    }
+    fetch(url).then(function(r){ return r.json(); }).then(function(j){
+      if (j && j.ok && Array.isArray(j.registros)){
+        state.registros = j.registros;
+        lsSetJSON(STORAGE.cache, state.registros);
+      }
+      renderMapa(); renderLista();
+    }).catch(function(){
+      renderMapa(); renderLista();
+    });
+  }
+
+  /* ---------------- Chips de filtro (compartilhados) ---------------- */
+  function montarChips(container, filtros, onToggle){
+    container.innerHTML = "";
+    Object.keys(TIPOS).forEach(function(key){
+      var t = TIPOS[key];
+      var chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "chip" + (filtros[key] ? "" : " off");
+      chip.style.setProperty("--chipcolor", TIPO_HEX[key]);
+      chip.innerHTML = '<span class="sw"></span>' + t.label;
+      chip.addEventListener("click", function(){
+        filtros[key] = !filtros[key];
+        chip.classList.toggle("off", !filtros[key]);
+        onToggle();
+      });
+      container.appendChild(chip);
+    });
+  }
+  montarChips(document.getElementById("chipsMapa"), state.filtrosMapa, function(){ renderMapa(); });
+  montarChips(document.getElementById("chipsLista"), state.filtrosLista, function(){ renderLista(); });
+
+  /* ---------------- Mapa ---------------- */
+  function initMapaSeNecessario(){
+    if (state.mapLoaded) { setTimeout(function(){ state.map.invalidateSize(); }, 50); return; }
+    state.map = L.map("map", { zoomControl: true }).setView([-6.05, -50.15], 12); // região de Carajás/PA por padrão
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: "© OpenStreetMap"
+    }).addTo(state.map);
+    state.mapLoaded = true;
+  }
+
+  function iconePara(tipo){
+    var hex = TIPO_HEX[tipo] || "#555";
+    var emoji = (TIPOS[tipo] || {}).emoji || "📍";
+    return L.divIcon({
+      className: "",
+      html: '<div style="width:30px;height:30px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:' + hex + ';border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;"><span style="transform:rotate(45deg);font-size:14px;">' + emoji + '</span></div>',
+      iconSize: [30, 30],
+      iconAnchor: [15, 29],
+      popupAnchor: [0, -28]
+    });
+  }
+
+  function formatarData(iso){
+    try {
+      var d = new Date(iso);
+      return d.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit" });
+    } catch(e){ return iso || "—"; }
+  }
+
+  function renderMapa(){
+    var count = document.getElementById("mapaCount");
+    if (!state.mapLoaded){ if(count) count.textContent=""; return; }
+    Object.keys(state.markers).forEach(function(id){ state.map.removeLayer(state.markers[id]); });
+    state.markers = {};
+    var visiveis = 0;
+    var bounds = [];
+    state.registros.forEach(function(reg){
+      if (!state.filtrosMapa[reg.tipo]) return;
+      if (reg.lat == null || reg.lng == null || reg.lat === "" || reg.lng === "") return;
+      var lat = parseFloat(reg.lat), lng = parseFloat(reg.lng);
+      if (isNaN(lat) || isNaN(lng)) return;
+      var marker = L.marker([lat, lng], { icon: iconePara(reg.tipo) }).addTo(state.map);
+      var t = TIPOS[reg.tipo] || { label: reg.tipo };
+      var extra = reg.patrimonio_modulo ? ("<br>Módulo vinculado: " + escapeHtml(reg.patrimonio_modulo)) : "";
+      var obs = reg.observacao ? ("<br>" + escapeHtml(reg.observacao)) : "";
+      marker.bindPopup(
+        '<div class="popup-card">' +
+          '<div class="tipo" style="color:' + (TIPO_HEX[reg.tipo]||"#555") + '">' + t.label + '</div>' +
+          '<div class="patr">' + escapeHtml(reg.patrimonio || "—") + '</div>' +
+          '<div class="meta">' + escapeHtml(reg.responsavel || "—") + ' · ' + formatarData(reg.timestamp) + extra + obs + '</div>' +
+        '</div>'
+      );
+      state.markers[reg.id || (lat+","+lng)] = marker;
+      bounds.push([lat, lng]);
+      visiveis++;
+    });
+    if (count) count.textContent = visiveis + " no mapa";
+    if (bounds.length) {
+      try { state.map.fitBounds(bounds, { padding: [30,30], maxZoom: 17 }); } catch(e){}
+    }
+  }
+
+  document.getElementById("btnRecarregarMapa").addEventListener("click", carregarRegistros);
+
+  /* ---------------- Lista ---------------- */
+  var buscaInput = document.getElementById("busca");
+  buscaInput.addEventListener("input", renderLista);
+  document.getElementById("btnRecarregarLista").addEventListener("click", carregarRegistros);
+
+  function escapeHtml(s){
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+
+  function renderLista(){
+    var wrap = document.getElementById("listaItems");
+    var countEl = document.getElementById("listaCount");
+    var termo = buscaInput.value.trim().toLowerCase();
+    var itens = state.registros.filter(function(r){
+      if (!state.filtrosLista[r.tipo]) return false;
+      if (termo && (r.patrimonio || "").toLowerCase().indexOf(termo) === -1) return false;
+      return true;
+    }).sort(function(a,b){ return new Date(b.timestamp) - new Date(a.timestamp); });
+
+    countEl.textContent = itens.length + " registro" + (itens.length === 1 ? "" : "s");
+    wrap.innerHTML = "";
+
+    if (!itens.length){
+      wrap.innerHTML = '<div class="empty"><span class="big">🗂️</span>Nenhum registro encontrado.</div>';
+      return;
+    }
+
+    itens.forEach(function(reg){
+      var t = TIPOS[reg.tipo] || { label: reg.tipo || "—" };
+      var card = document.createElement("div");
+      card.className = "item-card";
+      card.style.setProperty("--icolor", TIPO_HEX[reg.tipo] || "#555");
+      var extra = reg.patrimonio_modulo ? ("· módulo " + escapeHtml(reg.patrimonio_modulo)) : "";
+      card.innerHTML =
+        '<div class="dot"></div>' +
+        '<div class="body">' +
+          '<div class="row1"><span class="patr">' + escapeHtml(reg.patrimonio || "—") + '</span><span class="tipo">' + t.label + '</span></div>' +
+          '<div class="meta">' + escapeHtml(reg.responsavel || "—") + ' · ' + formatarData(reg.timestamp) + ' ' + extra + '</div>' +
+          (reg.observacao ? '<div class="obs">' + escapeHtml(reg.observacao) + '</div>' : '') +
+        '</div>' +
+        '<button type="button" class="btn btn-ghost btn-sm" data-ver="1">Ver no mapa</button>';
+      card.querySelector("[data-ver]").addEventListener("click", function(){
+        irParaAba("mapa");
+        initMapaSeNecessario();
+        setTimeout(function(){
+          var lat = parseFloat(reg.lat), lng = parseFloat(reg.lng);
+          if (!isNaN(lat) && !isNaN(lng) && state.map){
+            state.map.setView([lat, lng], 18);
+            var m = state.markers[reg.id || (lat+","+lng)];
+            if (m) m.openPopup();
+          }
+        }, 150);
+      });
+      wrap.appendChild(card);
+    });
+  }
+
+  /* ---------------- Início ---------------- */
+  atualizarStatus();
+  validarForm();
+  renderLista();
+  if (getApiUrl() && getApiUrl().indexOf("http") === 0){
+    carregarRegistros();
+  }
+  if (getFila().length && navigator.onLine) sincronizarFila();
+
+})();
+</script>
+</body>
+</html>
